@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>조사 팡! 한국어 게임</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      background: #eef5d2;
+      color: #222;
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 430px;
+      min-height: 90vh;
+      background: #eef5d2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      margin-top: 24px;
+      margin-bottom: 12px;
+      font-size: 2rem;
+      text-align: center;
+    }
+
+    .name-box {
+      width: 100%;
+      background: #fff;
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+    }
+
+    .name-box label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    .name-box input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+
+    .top-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 10px 0 20px;
+      font-size: 1rem;
+      font-weight: bold;
+    }
+
+    .info-box {
+      flex: 1;
+      background: #ffffffcc;
+      border-radius: 16px;
+      padding: 12px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .question-box {
+      width: 100%;
+      background: #fff;
+      border-radius: 24px;
+      padding: 28px 20px;
+      margin-bottom: 20px;
+      text-align: center;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.07);
+    }
+
+    .question-label {
+      font-size: 0.95rem;
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    .question {
+      font-size: 1.7rem;
+      line-height: 1.5;
+      font-weight: bold;
+      word-break: keep-all;
+    }
+
+    .choices {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    button.choice {
+      border: none;
+      border-radius: 22px;
+      padding: 24px 10px;
+      font-size: 1.8rem;
+      font-weight: bold;
+      background: #cfe88b;
+      cursor: pointer;
+      transition: transform 0.08s ease, opacity 0.2s ease;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
+
+    button.choice:active {
+      transform: scale(0.97);
+    }
+
+    button.choice:disabled {
+      cursor: default;
+      opacity: 0.9;
+    }
+
+    .correct { background: #9be28d !important; }
+    .wrong { background: #ffb3b3 !important; }
+
+    .feedback {
+      min-height: 36px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-bottom: 18px;
+      text-align: center;
+    }
+
+    .controls {
+      width: 100%;
+      margin-top: auto;
+      background: #fffef6;
+      border-radius: 28px;
+      padding: 20px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+    }
+
+    .start-btn, .restart-btn {
+      width: 100%;
+      border: none;
+      border-radius: 22px;
+      padding: 18px;
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: white;
+      background: #7624a8;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .hidden { display: none; }
+
+    .result-box {
+      width: 100%;
+      background: #fff;
+      border-radius: 24px;
+      padding: 30px 20px;
+      text-align: center;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.07);
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>조사 팡!</h1>
+
+    <div class="name-box">
+      <label for="studentName">학생 이름</label>
+      <input type="text" id="studentName" placeholder="이름을 입력하세요" />
+    </div>
+
+    <div class="top-bar">
+      <div class="info-box">점수: <span id="score">0</span></div>
+      <div class="info-box">문제: <span id="progress">0</span>/<span id="total">10</span></div>
+    </div>
+
+    <div id="gameArea" class="hidden">
+      <div class="question-box">
+        <div class="question-label">빈칸에 알맞은 조사를 고르세요</div>
+        <div class="question" id="questionText">문제가 여기에 나옵니다.</div>
+      </div>
+
+      <div class="choices" id="choicesContainer"></div>
+      <div class="feedback" id="feedback"></div>
+    </div>
+
+    <div id="resultArea" class="result-box hidden">
+      <h2>게임 종료!</h2>
+      <p id="resultMessage"></p>
+    </div>
+
+    <div class="controls">
+      <button id="startBtn" class="start-btn">게임 시작</button>
+      <button id="restartBtn" class="restart-btn hidden">다시 하기</button>
+    </div>
+  </div>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyyxRMtSFxa4t8PLLKolByjue_vGlm9hydy059KhKgbQV395pvqJIJW6EUXazYowOaZ/exec";
+
+    const quizData = [
+      {
+        sentence: "저는 학교 ___ 가요.",
+        choices: ["이", "에", "을", "와"],
+        answer: "에",
+        explanation: "‘학교에 가요’처럼 장소의 도착점을 나타낼 때 ‘에’를 써요."
+      },
+      {
+        sentence: "사과 ___ 먹어요.",
+        choices: ["가", "를", "에", "는"],
+        answer: "를",
+        explanation: "목적어이므로 ‘사과를 먹어요’가 맞아요."
+      },
+      {
+        sentence: "고양이 ___ 있어요.",
+        choices: ["가", "를", "에", "와"],
+        answer: "가",
+        explanation: "존재를 나타낼 때 주어 자리에는 ‘이/가’를 자주 써요."
+      },
+      {
+        sentence: "친구 ___ 만났어요.",
+        choices: ["를", "이", "에서", "도"],
+        answer: "를",
+        explanation: "만나는 대상은 목적어라서 ‘친구를 만났어요’예요."
+      },
+      {
+        sentence: "저는 도서관 ___ 공부해요.",
+        choices: ["을", "와", "에서", "가"],
+        answer: "에서",
+        explanation: "행동이 일어나는 장소에는 ‘에서’를 써요."
+      },
+      {
+        sentence: "동생 ___ 키가 커요.",
+        choices: ["은", "를", "에", "랑"],
+        answer: "은",
+        explanation: "주제를 나타낼 때 ‘은/는’을 써요."
+      },
+      {
+        sentence: "선생님 ___ 질문했어요.",
+        choices: ["께", "를", "이", "은"],
+        answer: "께",
+        explanation: "높임의 대상에게는 ‘께’가 자연스러워요."
+      },
+      {
+        sentence: "저 ___ 친구는 한국 사람이에요.",
+        choices: ["의", "를", "가", "에서"],
+        answer: "의",
+        explanation: "소유나 관계를 나타낼 때 ‘의’를 써요."
+      },
+      {
+        sentence: "엄마 ___ 아빠가 왔어요.",
+        choices: ["를", "와", "이", "도"],
+        answer: "와",
+        explanation: "둘을 연결할 때 ‘와/과’를 써요."
+      },
+      {
+        sentence: "오늘은 커피___ 차를 마시고 싶어요.",
+        choices: ["이", "보다", "를", "에"],
+        answer: "보다",
+        explanation: "비교할 때는 ‘보다’를 써요."
+      }
+    ];
+
+    const scoreEl = document.getElementById("score");
+    const progressEl = document.getElementById("progress");
+    const totalEl = document.getElementById("total");
+    const questionText = document.getElementById("questionText");
+    const choicesContainer = document.getElementById("choicesContainer");
+    const feedbackEl = document.getElementById("feedback");
+    const startBtn = document.getElementById("startBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const gameArea = document.getElementById("gameArea");
+    const resultArea = document.getElementById("resultArea");
+    const resultMessage = document.getElementById("resultMessage");
+    const studentNameEl = document.getElementById("studentName");
+
+    let currentIndex = 0;
+    let score = 0;
+    let quizList = [];
+    let startTime = null;
+
+    totalEl.textContent = quizData.length;
+
+    function shuffle(array) {
+      const copied = [...array];
+      for (let i = copied.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copied[i], copied[j]] = [copied[j], copied[i]];
+      }
+      return copied;
+    }
+
+    function startGame() {
+      const studentName = studentNameEl.value.trim();
+      if (!studentName) {
+        alert("학생 이름을 먼저 입력하세요.");
+        studentNameEl.focus();
+        return;
+      }
+
+      currentIndex = 0;
+      score = 0;
+      quizList = shuffle(quizData);
+      startTime = Date.now();
+
+      scoreEl.textContent = score;
+      progressEl.textContent = 0;
+      feedbackEl.textContent = "";
+
+      startBtn.classList.add("hidden");
+      restartBtn.classList.add("hidden");
+      resultArea.classList.add("hidden");
+      gameArea.classList.remove("hidden");
+
+      showQuestion();
+    }
+
+    function showQuestion() {
+      const item = quizList[currentIndex];
+      progressEl.textContent = currentIndex + 1;
+      questionText.textContent = item.sentence;
+      feedbackEl.textContent = "";
+      choicesContainer.innerHTML = "";
+
+      item.choices.forEach(choice => {
+        const btn = document.createElement("button");
+        btn.className = "choice";
+        btn.textContent = choice;
+        btn.addEventListener("click", () => handleChoice(btn, choice, item));
+        choicesContainer.appendChild(btn);
+      });
+    }
+
+    function handleChoice(button, selected, item) {
+      const buttons = document.querySelectorAll(".choice");
+      buttons.forEach(btn => btn.disabled = true);
+
+      if (selected === item.answer) {
+        button.classList.add("correct");
+        score += 10;
+        scoreEl.textContent = score;
+        feedbackEl.textContent = "정답! " + item.explanation;
+        feedbackEl.style.color = "#1f7a1f";
+      } else {
+        button.classList.add("wrong");
+        buttons.forEach(btn => {
+          if (btn.textContent === item.answer) {
+            btn.classList.add("correct");
+          }
+        });
+        feedbackEl.textContent = "오답! " + item.explanation;
+        feedbackEl.style.color = "#c0392b";
+      }
+
+      setTimeout(() => {
+        currentIndex++;
+        if (currentIndex < quizList.length) {
+          showQuestion();
+        } else {
+          endGame();
+        }
+      }, 1400);
+    }
+
+    async function saveScore() {
+      const studentName = studentNameEl.value.trim();
+      const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+
+      const payload = {
+        name: studentName,
+        score: score,
+        elapsedTime: elapsedSeconds,
+        totalQuestions: quizData.length
+      };
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        console.log("저장 결과:", result);
+      } catch (error) {
+        console.error("저장 실패:", error);
+        alert("점수 저장 중 오류가 났습니다.");
+      }
+    }
+
+    function endGame() {
+      gameArea.classList.add("hidden");
+      resultArea.classList.remove("hidden");
+      restartBtn.classList.remove("hidden");
+
+      let comment = "";
+      if (score === 100) {
+        comment = "완벽해요! 조사 사용이 아주 정확해요.";
+      } else if (score >= 70) {
+        comment = "아주 잘했어요! 기본 조사를 잘 이해하고 있어요.";
+      } else if (score >= 40) {
+        comment = "좋아요! 조금만 더 연습하면 훨씬 좋아질 거예요.";
+      } else {
+        comment = "괜찮아요. 조사는 반복 연습이 중요해요. 다시 도전해 보세요!";
+      }
+
+      resultMessage.innerHTML = `최종 점수: <strong>${score}점</strong><br>${comment}`;
+      saveScore();
+    }
+
+    startBtn.addEventListener("click", startGame);
+    restartBtn.addEventListener("click", startGame);
+  </script>
+</body>
+</html>
